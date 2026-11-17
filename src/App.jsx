@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, Plus, Trash, X } from "@phosphor-icons/react";
 import { WardrobeImportFlow } from "./import-flow.jsx";
 import { OptimizedImage } from "./OptimizedImage.jsx";
+import { STATIC_MODE, WARDROBE_URL, resolveItemAssets } from "./static-mode.js";
 
 const STORAGE_KEY = "open-wardrobe-edits-v1";
 const DELETED_STORAGE_KEY = "open-wardrobe-deleted-v1";
@@ -540,7 +541,7 @@ export function App() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/import/wardrobe", { cache: "no-store" })
+    fetch(WARDROBE_URL, { cache: "no-store" })
       .then((response) => {
         if (!response.ok) throw new Error("Could not load the wardrobe.");
         return response.json();
@@ -548,7 +549,7 @@ export function App() {
       .then((loadedItems) => {
         const edits = readEdits();
         const deleted = readDeletedItems();
-        const visibleItems = loadedItems.filter((item) => !deleted.has(item.id));
+        const visibleItems = loadedItems.filter((item) => !deleted.has(item.id)).map(resolveItemAssets);
         setItems(visibleItems.map((item) => ({ ...item, ...(edits[item.id] || {}) })));
       })
       .catch((requestError) => setError(requestError.message))
@@ -579,7 +580,7 @@ export function App() {
   };
 
   const deleteItem = async (id) => {
-    if (id.startsWith("import-")) {
+    if (!STATIC_MODE && id.startsWith("import-")) {
       try {
         const response = await fetch(`/api/import/wardrobe/${id}`, { method: "DELETE" });
         if (!response.ok && response.status !== 404) throw new Error("Could not delete the imported item.");
@@ -627,7 +628,7 @@ export function App() {
 
         {error && <p className="status error">{error}</p>}
         {!error && loading && <p className="status">Loading wardrobe</p>}
-        {!error && !loading && !items.length && <p className="status empty">Drop, paste, or add a photo to import your first piece.</p>}
+        {!error && !loading && !items.length && <p className="status empty">{STATIC_MODE ? "No pieces to show." : "Drop, paste, or add a photo to import your first piece."}</p>}
 
         {!!items.length && (
           <section className="gallery-grid" aria-label={`${TYPE_MAP[activeType]?.label || "All"} wardrobe items`}>
@@ -644,7 +645,7 @@ export function App() {
       </main>
 
       {selectedItem && <ItemViewer item={selectedItem} onClose={() => setSelectedId(null)} onSave={saveItem} onDelete={deleteItem} />}
-      <WardrobeImportFlow onGarmentApproved={addImportedItem} onModeledApproved={attachImportedModeledImage} />
+      {!STATIC_MODE && <WardrobeImportFlow onGarmentApproved={addImportedItem} onModeledApproved={attachImportedModeledImage} />}
     </div>
   );
 }

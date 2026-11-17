@@ -6,6 +6,8 @@ import { responsiveImageApi } from "./scripts/responsive-image-api.mjs";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   return {
+    // Static (GitHub Pages) builds are served from a sub-path such as /<repo>/.
+    base: mode === "static" ? (env.VITE_BASE || "/") : "/",
     optimizeDeps: {
       include: ["react", "react-dom/client"],
     },

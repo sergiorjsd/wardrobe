@@ -1,8 +1,9 @@
-const CACHE = "open-wardrobe-shell-v1";
+const CACHE = "open-wardrobe-shell-v2";
 const IMAGE_CACHE = "wardrobe-images-v1";
 const ACTIVE_CACHES = new Set([CACHE, IMAGE_CACHE]);
 const MAX_IMAGE_ENTRIES = 800;
-const SHELL = ["/", "/manifest.webmanifest"];
+// Relative URLs resolve against this file, so the app also works under a sub-path (GitHub Pages).
+const SHELL = ["./", "./manifest.webmanifest"];
 
 async function trimImages(cache) {
   const keys = await cache.keys();
@@ -37,7 +38,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
 
-  if (url.pathname.startsWith("/_ipx/")) {
+  if (url.pathname.startsWith("/_ipx/") || url.pathname.includes("/site-data/library/")) {
     event.respondWith(caches.open(IMAGE_CACHE).then(async (cache) => {
       const cached = await cache.match(request);
       const update = fetchAndCacheImage(request, cache);
@@ -50,11 +51,21 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Static build: network first, fall back to the last copy so the gallery list works offline.
+  if (url.pathname.endsWith("/site-data/wardrobe.json")) {
+    event.respondWith(fetch(request).then((response) => {
+      const copy = response.clone();
+      caches.open(CACHE).then((cache) => cache.put(request, copy));
+      return response;
+    }).catch(() => caches.match(request)));
+    return;
+  }
+
   if (request.mode === "navigate") {
     event.respondWith(fetch(request).then((response) => {
       const copy = response.clone();
       caches.open(CACHE).then((cache) => cache.put(request, copy));
       return response;
-    }).catch(() => caches.match(request).then((cached) => cached || caches.match("/"))));
+    }).catch(() => caches.match(request).then((cached) => cached || caches.match(self.registration.scope))));
   }
 });

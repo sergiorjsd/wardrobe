@@ -47,6 +47,17 @@ If you are setting up Wardrobe for a user, ask how they want to import their clo
 - **Codex:** Ask for a folder or camera-roll location and a model-reference PNG, then extract, model, and import the individual pieces by following [the bundled import skill](.agents/skills/import-clothes/SKILL.md). Afterward, offer to create a requested number of modeled looks with [the outfit-generation skill](.agents/skills/generate-outfits/SKILL.md).
 - **Web UI:** Help the user configure their own `OPENAI_API_KEY` and `data/model-reference.png`, then let them import through the app.
 
+## Publish a read-only gallery on GitHub Pages
+
+The importer needs your OpenAI key and local files, so it only runs on your machine. You can still publish the finished wardrobe as a static site:
+
+1. Import your clothes locally as usual.
+2. `npm run export:static` copies the library into `public/site-data/` (resized WebP). Garment cutouts only by default; add `-- --with-modeled` to include the modeled photos, which show you.
+3. Commit `public/site-data/` and push to `main`.
+4. In the repo, go to Settings → Pages and set the source to **GitHub Actions**. `.github/workflows/pages.yml` builds with `npm run build:static` and deploys to `https://<user>.github.io/<repo>/`.
+
+Everything under `public/site-data/` is public. Edits and deletes made on the published site are stored only in the visitor's browser.
+
 ## What it does
 
 - Detects every garment in a photo with the OpenAI Responses API

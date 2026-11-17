@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 import { Image } from "@unpic/react";
+import { STATIC_MODE } from "./static-mode.js";
 
 const IPX_OPTIONS = { ipx: { baseURL: "/_ipx" } };
 const DEFAULT_BREAKPOINTS = [160, 240, 320, 480, 640, 800, 960, 1280];
@@ -22,7 +23,8 @@ export const OptimizedImage = forwardRef(function OptimizedImage({
 }, ref) {
   const normalizedSource = sourcePath(src);
 
-  if (!normalizedSource || normalizedSource.startsWith("data:") || normalizedSource.startsWith("blob:") || normalizedSource.startsWith("/api/")) {
+  // The static build has no image proxy (/_ipx); export:static already resizes the images.
+  if (STATIC_MODE || !normalizedSource || normalizedSource.startsWith("data:") || normalizedSource.startsWith("blob:") || normalizedSource.startsWith("/api/")) {
     return <img ref={ref} src={src} alt={alt} sizes={sizes} loading={loading || (priority ? "eager" : "lazy")} decoding={decoding || "async"} {...props} />;
   }
 
